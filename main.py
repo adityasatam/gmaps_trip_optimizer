@@ -63,8 +63,8 @@ def create_route_url_dict(places_dict):
 
 
 def scrape_time_dist_from_gmaps(route_url_dict):
-    #driver = webdriver.Chrome()
-    driver = create_silent_driver()
+    driver = webdriver.Chrome()
+    #driver = create_silent_driver()
     raw_route_time_dist_dict = {}
 
     for route_key, route_url in route_url_dict.items():
@@ -264,7 +264,8 @@ def print_clean_route(places_dict, optimal_path):
     print(f"\nfinal_route:\n{final_route}\n")
 
 def open_maps_in_browser(url):
-    driver = create_silent_driver()
+    driver = webdriver.Chrome()
+    #driver = create_silent_driver()
     driver.get(url)
 
     input("To exit press ctrl+c and close browser\n")
