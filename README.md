@@ -6,12 +6,12 @@ When planning a multi-destination trip. Google Maps does not always optimize com
 Traffic-based travel time varies depending on departure time. Distance from A → B may differ from B → A.  
 Google Maps restricts waypoint count (max 10 locations). It overcomes this limitation using algorithmic optimization.  
 
-# GMaps Route Optimizer (TSP Based)  
+# ⚙️How It Works  
 Reads destinations from a text file and Fetches live Google Maps distance & travel stats  
 Builds an asymmetric distance matrix & Solves the Traveling Salesman Problem (TSP)  
 Prints an optimized round trip. Opens the final optimized route in Google Maps (within waypoint limits)  
 
-# 📥 Input Format  
+# 📥 Input  
 The input is a sample_destinations.txt file containing destinations:  
   
 Source Location  
