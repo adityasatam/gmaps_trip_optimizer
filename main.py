@@ -289,44 +289,44 @@ def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_des
     # 1. Load places
     # -----------------------------
     places_dict = load_places_from_file(places_fullfilepath)
-    print("step 1")
+
     # -----------------------------
     # 2. Generate route URLs
     # -----------------------------
     route_url_dict = create_route_url_dict(places_dict)
-    print("step 2")
+
     # -----------------------------
     # 3. Scrape time & distance
     # -----------------------------
     raw_route_time_dist_dict = scrape_time_dist_from_gmaps(route_url_dict)
-    print("step 3")
+
     # -----------------------------
     # 4. Extract valid time-distance pairs
     # -----------------------------
     route_time_dist_dict = valid_time_dist_pairs(raw_route_time_dist_dict)
-    print("step 4")
+
     # -----------------------------
     # 5. Get minimum route distances
     # -----------------------------
     min_route_time_dist_dict = min_route_time_dist(route_time_dist_dict)
-    print("step 5")
+
     # -----------------------------
     # 6. Create distance matrix
     # -----------------------------
     dist_matrix = create_dist_matrix(min_route_time_dist_dict)
-    print("step 6")
+
     # -----------------------------
     # 7. Solve TSP
     # -----------------------------
     min_cost, optimal_path = solve_tsp_with_path(dist_matrix)
-    print("step 7")
+
     # -----------------------------
     # 8. Print clean route
     # -----------------------------
     print_clean_route(places_dict, optimal_path)
-    print("step 8")
+
     # -----------------------------
     # 9. Open final Google Maps route
     # -----------------------------
     create_and_open_maps_url(places_dict, optimal_path)
-    print("step 9")
+
