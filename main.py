@@ -283,7 +283,8 @@ def create_and_open_maps_url(places_dict, optimal_path, max_places=10):
     open_maps_in_browser(url)
 
 
-def main(places_fullfilepath='C:/Users/sasuk/travelling_salesman/sample_destinations.txt'):
+def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_destinations.txt"):
+    places_fullfilepath = file_path+file_name
     # -----------------------------
     # 1. Load places
     # -----------------------------
