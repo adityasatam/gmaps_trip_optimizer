@@ -12,6 +12,6 @@ response = requests.get(url)
 if response.status_code == 200:
     exec(response.text)
     #print(response.text)
-    main(places_fullfilepath='C:/Users/sasuk/travelling_salesman/destinations.txt')
+    main(places_fullfilepath='C:/Users/sasuk/travelling_salesman/sample_destinations.txt')
 else:
     print("Failed to execute the github code")
