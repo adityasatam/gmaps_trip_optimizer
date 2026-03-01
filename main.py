@@ -289,6 +289,7 @@ def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_des
     # 1. Load places
     # -----------------------------
     places_dict = load_places_from_file(places_fullfilepath)
+    print(places_dict)
 
     # -----------------------------
     # 2. Generate route URLs
