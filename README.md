@@ -12,7 +12,7 @@ Builds an asymmetric distance matrix & Solves the Traveling Salesman Problem (TS
 Prints an optimized round trip. Opens the final optimized route in Google Maps (within waypoint limits)  
 
 # 📥 Input Format  
-The input is a places_to_visit.txt file containing destinations:  
+The input is a sample_destinations.txt file containing destinations:  
   
 Source Location  
 Destination 1  
