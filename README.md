@@ -7,9 +7,9 @@ Traffic-based travel time varies depending on departure time. Distance from A �
 Google Maps restricts waypoint count (max 10 locations). It overcomes this limitation using algorithmic optimization.  
 
 # ⚙️How It Works  
-Reads destinations from a text file and Fetches live Google Maps distance & travel stats  
-Builds an asymmetric distance matrix & Solves the Traveling Salesman Problem (TSP)  
-Prints an optimized round trip. Opens the final optimized route in Google Maps (within waypoint limits)  
+Reads destinations from a text file and Fetches live Google Maps distance & travel stats.  
+Builds an asymmetric distance matrix & Solves the Traveling Salesman Problem (TSP).  
+Prints an optimized round trip. Opens the final optimized route in Google Maps (within waypoint limits).  
 
 # 📥 Input  
 Save a local input sample_destinations.txt file containing destinations:  
