@@ -369,7 +369,7 @@ def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_des
     # 7. Solve TSP
     # -----------------------------
     min_cost, optimal_path = solve_tsp_with_path(dist_matrix)
-    print(min_cost)
+    print(f"\min_cost:\n{min_cost}\n")
 
     # -----------------------------
     # 8. Print clean route
