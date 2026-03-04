@@ -2,6 +2,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from collections import defaultdict
 from functools import lru_cache
 import re
@@ -10,28 +12,28 @@ import os
 import sys
 
 
-def create_silent_driver():
-    options = Options()
+# def create_silent_driver():
+#     options = Options()
 
-    # Disable Chrome logging
-    options.add_argument("--log-level=3")
-    options.add_argument("--disable-logging")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--disable-extensions")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
+#     # Disable Chrome logging
+#     options.add_argument("--log-level=3")
+#     options.add_argument("--disable-logging")
+#     options.add_argument("--disable-gpu")
+#     options.add_argument("--disable-extensions")
+#     options.add_argument("--no-sandbox")
+#     options.add_argument("--disable-dev-shm-usage")
 
-    # Remove "DevTools listening"
-    options.add_experimental_option("excludeSwitches", ["enable-logging"])
+#     # Remove "DevTools listening"
+#     options.add_experimental_option("excludeSwitches", ["enable-logging"])
 
-    # Silence chromedriver service logs
-    service = Service(log_path=os.devnull)
+#     # Silence chromedriver service logs
+#     service = Service(log_path=os.devnull)
 
-    # Suppress stderr completely (strong suppression)
-    sys.stderr = open(os.devnull, 'w')
+#     # Suppress stderr completely (strong suppression)
+#     sys.stderr = open(os.devnull, 'w')
 
-    driver = webdriver.Chrome(service=service, options=options)
-    return driver
+#     driver = webdriver.Chrome(service=service, options=options)
+#     return driver
 
 
 def load_places_from_file(file_path):
@@ -66,20 +68,12 @@ def scrape_time_dist_from_gmaps(route_url_dict):
     options = Options()
     options.add_argument("--start-maximized")
     options.add_argument("--force-device-scale-factor=0.9")
+    options.add_argument("--headless=new")
     driver = webdriver.Chrome(options=options)
 
     raw_route_time_dist_dict = {}
 
-    for route_key, route_url in route_url_dict.items():
-        driver.get(route_url)
-        time.sleep(7)
-
-        elements = driver.find_elements(
-            By.XPATH,
-            "//div[contains(text(),'hr') or contains(text(),'min') or contains(text(),'h') or contains(text(),'m') or contains(text(),'km')]"
-        )
-
-        pattern = re.compile(
+    pattern = re.compile(
             r"\d+\s*hr(?:\s*\d+\s*min)?|"
             r"\d+\s*hr(?:\s*\d+\s*m)?|"
             r"\d+\s*h(?:\s*\d+\s*m)?|"
@@ -88,6 +82,25 @@ def scrape_time_dist_from_gmaps(route_url_dict):
             r"\d+(?:\.\d+)?\s*m|"
             r"\d+(?:\.\d+)?\s*km"
         )
+    
+    for route_key, route_url in route_url_dict.items():
+        driver.get(route_url)
+
+        wait = WebDriverWait(driver, 10)
+
+        xpath_expr = ("//div[contains(text(),'hr') or contains(text(),'min') or "
+                    "contains(text(),'h') or contains(text(),'m') or contains(text(),'km')]")
+
+        wait.until(EC.presence_of_element_located((By.XPATH, xpath_expr)))
+
+        elements = driver.find_elements(By.XPATH, xpath_expr)
+
+        # time.sleep(3)
+
+        # elements = driver.find_elements(
+        #     By.XPATH,
+        #     "//div[contains(text(),'hr') or contains(text(),'min') or contains(text(),'h') or contains(text(),'m') or contains(text(),'km')]"
+        # )
 
         extracted_values = []
 
@@ -356,7 +369,8 @@ def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_des
     # 7. Solve TSP
     # -----------------------------
     min_cost, optimal_path = solve_tsp_with_path(dist_matrix)
-    # print(min_cost)
+    print(min_cost)
+
     # -----------------------------
     # 8. Print clean route
     # -----------------------------
@@ -366,5 +380,3 @@ def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_des
     # 9. Open final Google Maps route
     # -----------------------------
     create_and_open_maps_url(places_dict, optimal_path)
-
-main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_destinations.txt")
