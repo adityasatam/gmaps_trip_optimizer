@@ -63,25 +63,30 @@ def create_route_url_dict(places_dict):
 
 
 def scrape_time_dist_from_gmaps(route_url_dict):
-    driver = webdriver.Chrome()
-    #driver = create_silent_driver()
+    options = Options()
+    options.add_argument("--start-maximized")
+    options.add_argument("--force-device-scale-factor=0.9")
+    driver = webdriver.Chrome(options=options)
+
     raw_route_time_dist_dict = {}
 
     for route_key, route_url in route_url_dict.items():
         driver.get(route_url)
-        time.sleep(5)
+        time.sleep(7)
 
         elements = driver.find_elements(
             By.XPATH,
-            "//div[contains(text(),'hr') or contains(text(),'min') or contains(text(),'km') or contains(text(),'m')]"
+            "//div[contains(text(),'hr') or contains(text(),'min') or contains(text(),'h') or contains(text(),'m') or contains(text(),'km')]"
         )
 
         pattern = re.compile(
-            r"\d+\s*h(?:\s*\d+\s*m)?|"
             r"\d+\s*hr(?:\s*\d+\s*min)?|"
+            r"\d+\s*hr(?:\s*\d+\s*m)?|"
+            r"\d+\s*h(?:\s*\d+\s*m)?|"
+            r"\d+\s*h(?:\s*\d+\s*min)?|"
             r"\d+\s*min|"
-            r"\d+(?:\.\d+)?\s*km|"
-            r"\d+\s*m"
+            r"\d+(?:\.\d+)?\s*m|"
+            r"\d+(?:\.\d+)?\s*km"
         )
 
         extracted_values = []
@@ -97,26 +102,55 @@ def scrape_time_dist_from_gmaps(route_url_dict):
     return raw_route_time_dist_dict
 
 
+def classify_value(value):
+    val = value.lower().strip()
+
+    if re.search(r'\b\d+(\.\d+)?\s*km\b', val):
+        return "distance"
+
+    if re.search(r'\b\d+\s*m\b', val) and not re.search(r'h|min', val):
+        return "distance"
+
+    if re.search(r'\b\d+\s*(h|hr)\b', val):
+        return "time"
+
+    if re.search(r'\b\d+\s*(m|min)\b', val):
+        return "time"
+
+    return None
+
+
 def valid_time_dist_pairs(raw_route_time_dist_dict):
-    distance_regex = re.compile(r'\b\d+(?:\.\d+)?\s+(?:km|m)\b')
+
     route_time_dist_dict = {}
 
-    for route_key, values in raw_route_time_dist_dict.items():
-        start_index = None
+    for route, values in raw_route_time_dist_dict.items():
+        pairs = []
+        i = 0
 
-        for i, val in enumerate(values):
-            if distance_regex.search(val):
-                start_index = i - 1
-                break
+        while i < len(values) - 1:
+            current = values[i]
+            nxt = values[i + 1]
 
-        route_time_dist_dict[route_key] = values[start_index:] if start_index is not None else []
+            if classify_value(current) == "time" and classify_value(nxt) == "distance":
+                pairs.append((current.strip(), nxt.strip()))
+                i += 2
+            else:
+                i += 1
+
+        route_time_dist_dict[route] = pairs
 
     return route_time_dist_dict
 
 
 def convert_time_to_mins(time_str):
-    hr_match = re.search(r'(\d+)\s*hr', time_str)
-    min_match = re.search(r'(\d+)\s*min', time_str)
+    time_str = time_str.lower().strip()
+
+    # Match hours (h or hr)
+    hr_match = re.search(r'(\d+)\s*(?:h|hr)\b', time_str)
+
+    # Match minutes (m or min)
+    min_match = re.search(r'(\d+)\s*(?:m|min)\b', time_str)
 
     hours = int(hr_match.group(1)) if hr_match else 0
     minutes = int(min_match.group(1)) if min_match else 0
@@ -125,36 +159,36 @@ def convert_time_to_mins(time_str):
 
 
 def convert_dist_to_mtrs(dist_str):
-    if 'km' in dist_str:
-        return float(dist_str.replace(' km', '')) * 1000
-    elif 'm' in dist_str:
-        return float(dist_str.replace(' m', ''))
+    dist_str = dist_str.lower().strip()
+
+    km_match = re.search(r'(\d+(?:\.\d+)?)\s*km\b', dist_str)
+    m_match = re.search(r'(\d+)\s*m\b', dist_str)
+
+    if km_match:
+        return float(km_match.group(1)) * 1000
+
+    if m_match:
+        return float(m_match.group(1))
+
     return 0
 
 
 def min_route_time_dist(route_time_dist_dict):
-    min_route_time_dist_dict= {}
+    min_route_time_dist_dict = {}
 
-    for k, v in route_time_dist_dict.items():
-        # ------------------------
-        # Step 3: Normalize + group
-        # ------------------------
-
+    for route, pairs in route_time_dist_dict.items():
         grouped = defaultdict(list)
 
-        for i in range(0, len(v), 2):
-            time_min = convert_time_to_mins(v[i])
-            dist_m = convert_dist_to_mtrs(v[i+1])
+        for time_str, dist_str in pairs:
+            time_min = convert_time_to_mins(time_str)
+            dist_m = convert_dist_to_mtrs(dist_str)
             grouped[dist_m].append(time_min)
 
-        # ------------------------
-        # Step 4: Find min distance
-        # ------------------------
-
-        min_distance = min(grouped.keys())
-        # min_time = min(grouped[min_distance])
-
-        min_route_time_dist_dict[k] = min_distance
+        if grouped:
+            min_distance = min(grouped.keys())
+            min_route_time_dist_dict[route] = min_distance
+        else:
+            min_route_time_dist_dict[route] = None  # or 0
 
     return min_route_time_dist_dict
 
@@ -263,9 +297,9 @@ def print_clean_route(places_dict, optimal_path):
     final_route = " -> ".join(cleaned_places)
     print(f"\nfinal_route:\n{final_route}\n")
 
+
 def open_maps_in_browser(url):
     driver = webdriver.Chrome()
-    #driver = create_silent_driver()
     driver.get(url)
 
     input("To exit press ctrl+c and close browser\n")
@@ -300,27 +334,29 @@ def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_des
     # 3. Scrape time & distance
     # -----------------------------
     raw_route_time_dist_dict = scrape_time_dist_from_gmaps(route_url_dict)
-
+    # print(raw_route_time_dist_dict)
     # -----------------------------
     # 4. Extract valid time-distance pairs
     # -----------------------------
     route_time_dist_dict = valid_time_dist_pairs(raw_route_time_dist_dict)
+    # print(route_time_dist_dict)
 
     # -----------------------------
     # 5. Get minimum route distances
     # -----------------------------
     min_route_time_dist_dict = min_route_time_dist(route_time_dist_dict)
+    # print(min_route_time_dist_dict)
 
     # -----------------------------
     # 6. Create distance matrix
     # -----------------------------
     dist_matrix = create_dist_matrix(min_route_time_dist_dict)
-
+    # print(dist_matrix)
     # -----------------------------
     # 7. Solve TSP
     # -----------------------------
     min_cost, optimal_path = solve_tsp_with_path(dist_matrix)
-
+    # print(min_cost)
     # -----------------------------
     # 8. Print clean route
     # -----------------------------
@@ -331,3 +367,4 @@ def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_des
     # -----------------------------
     create_and_open_maps_url(places_dict, optimal_path)
 
+main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_destinations.txt")
