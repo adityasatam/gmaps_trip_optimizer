@@ -71,13 +71,6 @@ def scrape_time_dist_from_gmaps(route_url_dict):
 
         elements = driver.find_elements(By.XPATH, xpath_expr)
 
-        # time.sleep(3)
-
-        # elements = driver.find_elements(
-        #     By.XPATH,
-        #     "//div[contains(text(),'hr') or contains(text(),'min') or contains(text(),'h') or contains(text(),'m') or contains(text(),'km')]"
-        # )
-
         extracted_values = []
 
         for el in elements:
@@ -325,58 +318,61 @@ def create_gmap_url(places_dict, optimal_path, max_places=10):
     return url
 
 
-def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_destinations.txt", parameters=['dist', 'time']):
+def main1(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_destinations.txt", parameters=['dist', 'time']):
     places_fullfilepath = file_path+file_name
     # -----------------------------
     # 1. Load places
     # -----------------------------
     places_dict = load_places_from_file(places_fullfilepath)
+    # print(places_dict) #{'p0': 'Aparna+Cyberscape+A+Block', 'p1': 'Aparna+CyberZon+Block+J'}
 
     # -----------------------------
     # 2. Generate route URLs
     # -----------------------------
     route_url_dict = create_route_url_dict(places_dict)
+    # print(route_url_dict) #{'p0/p1': 'https://www.google.com/maps/dir/Aparna+Cyberscape+A+Block/Aparna+CyberZon+Block+J', 'p1/p0': 'https://www.google.com/maps/dir/Aparna+CyberZon+Block+J/Aparna+Cyberscape+A+Block'}
 
     # -----------------------------
     # 3. Scrape time & distance
     # -----------------------------
     raw_route_time_dist_dict = scrape_time_dist_from_gmaps(route_url_dict)
-    # print(raw_route_time_dist_dict)
+    # print(raw_route_time_dist_dict) #{'p0/p1': ['12 min', '9 min', '25 min', '25 min', '1.8 km', '31 min', '2.3 km'], 'p1/p0': ['13 min', '10 min', '25 min', '25 min', '1.8 km', '27 min', '2.0 km', '33 min', '2.4 km']}
+
     # -----------------------------
     # 4. Extract valid time-distance pairs
     # -----------------------------
     route_time_dist_dict = valid_time_dist_pairs(raw_route_time_dist_dict)
-    # print(route_time_dist_dict)
-    
+    # print(route_time_dist_dict) #{'p0/p1': [('25 min', '1.8 km'), ('31 min', '2.3 km')], 'p1/p0': [('25 min', '1.8 km'), ('27 min', '2.0 km'), ('33 min', '2.4 km')]}
+
     for param in parameters:
         # -----------------------------
         # 5. Get minimum route distances
         # -----------------------------
         min_route_time_dist_dict = min_route_time_dist(route_time_dist_dict, param)
-        # print(min_route_time_dist_dict)
+        # print(min_route_time_dist_dict) #{'p0/p1': 1800.0, 'p1/p0': 1800.0}
 
         # -----------------------------
         # 6. Create distance matrix
         # -----------------------------
         matrix = create_matrix(min_route_time_dist_dict)
-
         # print(matrix)
+
         # -----------------------------
         # 7. Solve TSP
         # -----------------------------
         min_cost, optimal_path = solve_tsp_with_path(matrix)
-        print(f"\n{param} - min cost:\n{min_cost}")
+        print(f"\n{param} - min cost:\n{min_cost}") #3600.0
 
         # -----------------------------
         # 8. Print clean route
         # -----------------------------
         final_route = print_clean_route(places_dict, optimal_path, min_route_time_dist_dict)
-        print(f"\n{param} - final route:\n{final_route}\n")
+        print(f"\n{param} - final route:\n{final_route}\n") #Aparna Cyberscape A Block -1800-> Aparna CyberZon Block J -1800-> Aparna Cyberscape A Block
 
         # -----------------------------
         # 9. Open final Google Maps route
         # -----------------------------
         url = create_gmap_url(places_dict, optimal_path)
-        print(f"{param} - open gmaps url: ctrl + click:\n{url}\n")
-        
+        print(f"{param} - open gmaps url: ctrl + click:\n{url}\n") #https://www.google.com/maps/dir/Aparna+Cyberscape+A+Block/Aparna+CyberZon+Block+J/Aparna+Cyberscape+A+Block
+
     open_maps_in_browser(url)
