@@ -10,16 +10,27 @@ from itertools import islice
 from urllib.parse import urlparse
 
 
-def create_places_dict(gmap_url):
+def create_places_dict(gmap_url, full_file_path):
     
-    # extract the route part
-    route_part = gmap_url.split("/dir/")[1].split("/@")[0]
-    
-    # split locations
-    places = route_part.split("/")
-    
-    # build dictionary
-    places_dict = {f"p{i}": place for i, place in enumerate(places)}
+    if not gmap_url:
+        places_dict = {}
+
+        with open(full_file_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+        for idx, line in enumerate(lines):   # start from 0
+            place = line.strip()
+            if place:
+                places_dict[f"p{idx}"] = place.replace(" ", "+")
+    else:
+        # extract the route part
+        route_part = gmap_url.split("/dir/")[1].split("/@")[0]
+        
+        # split locations
+        places = route_part.split("/")
+        
+        # build dictionary
+        places_dict = {f"p{i}": place for i, place in enumerate(places)}
     
     return places_dict
 
@@ -330,11 +341,13 @@ def create_gmap_urls(places_dict, optimal_path, max_places=10):
     return urls
 
 
-def main(gmap_url="https://www.google.com/maps/dir/Friends+Colony,+Jai+Hind+Nagar+Colony,+Qutub+Shahi+Tombs,+Hyderabad,+Telangana/Golconda+Fort,+Hyderabad,+Telangana/Qutub+Shahi+Tombs,+Hyderabad,+Telangana+500104/@17.3916524,78.3876687,15z/data=!3m1!4b1", parameters=['time', 'dist']):
+def main(gmap_url="https://www.google.com/maps/dir/Ramky+One+Kosmos,+Eco+Art+Studio,+Ramky+One+Kosmos+Rd,+Tellapur,+Hyderabad,+Nallagandla,+Telangana+500046/Shah+Ghouse+Hotel+%26+Restaurant,+Gachibowli,+Villa-8,+Gachibowli+Rd,+opposite+Bio+Diversity+Park,+Raidurgam,+Madhura+Nagar+Colony,+Gachibowli,+Hyderabad,+Telangana+500104/Golconda+Fort,+Hyderabad,+Telangana/Micron+Technology+Aquila,+Phoenix+-+Aquila+Block+A+Financial+District,+Nankaramguda,+Serilingampalle+(M),+Hyderabad,+Telangana+500032/@17.4187615,78.313202,13z/data=!3m1!4b1!4m26!4m25!1m5!1m1!1s0x3bcb9327b3c2efe1:0xfd50a105df6e72e!2m2!1d78.3045696!2d17.4617084!1m5!1m1!1s0x3bcb93f96a9c5151:0xc3acabf7b492dc17!2m2!1d78.3762853!2d17.4267841!1m5!1m1!1s0x3bcb968c5f1342f3:0xd752a9bdbdde84df!2m2!1d78.4033392!2d17.3847636!1m5!1m1!1s0x3bcb95b81f90ab95:0xd3005ecbfbd05f8b!2m2!1d78.340366!2d17.4173728!3e9?entry=ttu&g_ep=EgoyMDI2MDMwNC4xIKXMDSoASAFQAw%3D%3D"
+      , full_file_path=r"C:/Users/sasuk/travelling_salesman/sample_destinations.txt"
+      , parameters=['time', 'dist']):
     # -----------------------------
     # 1. Load places
     # -----------------------------
-    places_dict = create_places_dict(gmap_url)
+    places_dict = create_places_dict(gmap_url, full_file_path)
     # places_dict = load_places_from_file(places_fullfilepath)
     # print(places_dict) #{'p0': 'Aparna+Cyberscape+A+Block', 'p1': 'Aparna+CyberZon+Block+J'}
 
