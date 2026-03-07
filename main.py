@@ -7,19 +7,20 @@ from selenium.webdriver.support import expected_conditions as EC
 from functools import lru_cache
 import re
 from itertools import islice
+from urllib.parse import urlparse
 
 
-def load_places_from_file(file_path):
-    places_dict = {}
-
-    with open(file_path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-
-    for idx, line in enumerate(lines):   # start from 0
-        place = line.strip()
-        if place:
-            places_dict[f"p{idx}"] = place.replace(" ", "+")
-
+def create_places_dict(gmap_url):
+    
+    # extract the route part
+    route_part = gmap_url.split("/dir/")[1].split("/@")[0]
+    
+    # split locations
+    places = route_part.split("/")
+    
+    # build dictionary
+    places_dict = {f"p{i}": place for i, place in enumerate(places)}
+    
     return places_dict
 
 
@@ -329,12 +330,12 @@ def create_gmap_urls(places_dict, optimal_path, max_places=10):
     return urls
 
 
-def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_destinations.txt", parameters=['time', 'dist']):
-    places_fullfilepath = file_path+file_name
+def main(gmap_url="https://www.google.com/maps/dir/Friends+Colony,+Jai+Hind+Nagar+Colony,+Qutub+Shahi+Tombs,+Hyderabad,+Telangana/Golconda+Fort,+Hyderabad,+Telangana/Qutub+Shahi+Tombs,+Hyderabad,+Telangana+500104/@17.3916524,78.3876687,15z/data=!3m1!4b1", parameters=['time', 'dist']):
     # -----------------------------
     # 1. Load places
     # -----------------------------
-    places_dict = load_places_from_file(places_fullfilepath)
+    places_dict = create_places_dict(gmap_url)
+    # places_dict = load_places_from_file(places_fullfilepath)
     # print(places_dict) #{'p0': 'Aparna+Cyberscape+A+Block', 'p1': 'Aparna+CyberZon+Block+J'}
 
     # -----------------------------
