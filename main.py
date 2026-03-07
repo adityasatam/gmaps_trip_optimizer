@@ -364,7 +364,7 @@ def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_des
         # 5. Get minimum route distances
         # -----------------------------
         min_route_time_dist_dict = min_route_time_dist(route_time_dist_dict, param)
-        # print(min_route_time_dist_dict) #{'p0/p1': 1800.0, 'p1/p0': 1800.0}
+        # print(min_route_time_dist_dict) #{'p0/p1': 1800, 'p1/p0': 1800}
 
         # -----------------------------
         # 6. Create distance matrix
@@ -377,7 +377,7 @@ def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_des
         # -----------------------------
         min_cost, path = solve_tsp_with_path(matrix)
         optimal_path = [places[int(p[1:])] for p in path]
-        print(f"\n{param} - min cost:\n{min_cost} {dim}") #3600.0
+        print(f"\n{param} - min cost:\n{min_cost} {dim}") #3600
 
         # -----------------------------
         # 8. Print clean route
