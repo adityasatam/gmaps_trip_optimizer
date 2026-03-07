@@ -12,6 +12,6 @@ response = requests.get(url)
 if response.status_code == 200:
     exec(response.text)
     #print(response.text)
-    main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_destinations.txt", parameters=['dist', 'time'])
+    main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_destinations.txt", parameters=['time', 'dist'])
 else:
     print("Failed to execute the github code")
