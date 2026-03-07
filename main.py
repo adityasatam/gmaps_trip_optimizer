@@ -246,7 +246,7 @@ def solve_tsp_with_path(matrix):
     return min_cost, path_with_prefix
 
 
-def print_clean_route(places_dict, optimal_path, min_route_time_dist_dict):
+def print_clean_route(places_dict, optimal_path, min_route_time_dist_dict, dim):
     
     # Step 1: Convert keys to actual place strings
     raw_places = [places_dict[p] for p in optimal_path]
@@ -288,7 +288,7 @@ def print_clean_route(places_dict, optimal_path, min_route_time_dist_dict):
 
         distance = int(min_route_time_dist_dict.get(f"{start}/{end}", 0))
 
-        route_parts.append(f"{cleaned_places[i]} -{distance}->")
+        route_parts.append(f"{cleaned_places[i]} -{distance} {dim}->")
 
     route_parts.append(cleaned_places[-1])
 
@@ -341,6 +341,10 @@ def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_des
     # print(route_time_dist_dict) #{'p0/p1': [('25 min', '1.8 km'), ('31 min', '2.3 km')], 'p1/p0': [('25 min', '1.8 km'), ('27 min', '2.0 km'), ('33 min', '2.4 km')]}
 
     for param in parameters:
+        if param == 'dist':
+            dim = 'mtr'
+        else:
+            dim = 'min'
         # -----------------------------
         # 5. Get minimum route distances
         # -----------------------------
@@ -357,12 +361,12 @@ def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_des
         # 7. Solve TSP
         # -----------------------------
         min_cost, optimal_path = solve_tsp_with_path(matrix)
-        print(f"\n{param} - min cost:\n{min_cost}") #3600.0
+        print(f"\n{param} - min cost:\n{min_cost} {dim}") #3600.0
 
         # -----------------------------
         # 8. Print clean route
         # -----------------------------
-        final_route = print_clean_route(places_dict, optimal_path, min_route_time_dist_dict)
+        final_route = print_clean_route(places_dict, optimal_path, min_route_time_dist_dict, dim)
         print(f"\n{param} - final route:\n{final_route}\n") #Aparna Cyberscape A Block -1800-> Aparna CyberZon Block J -1800-> Aparna Cyberscape A Block
 
         # -----------------------------
