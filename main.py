@@ -6,6 +6,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from functools import lru_cache
 import re
+from itertools import islice
 
 
 def load_places_from_file(file_path):
@@ -34,6 +35,25 @@ def create_route_url_dict(places_dict):
                 route_url_dict[route] = url
 
     return route_url_dict
+
+
+def scrape_in_batches(route_url_dict, batch_size=30):
+
+    raw_route_time_dist_dict = {}
+
+    keys = list(route_url_dict.keys())
+
+    for i in range(0, len(keys), batch_size):
+
+        batch_keys = keys[i:i+batch_size]
+
+        batch_dict = {k: route_url_dict[k] for k in batch_keys}
+
+        batch_result = scrape_time_dist_from_gmaps(batch_dict)
+
+        raw_route_time_dist_dict.update(batch_result)
+
+    return raw_route_time_dist_dict
 
 
 def scrape_time_dist_from_gmaps(route_url_dict):
@@ -143,10 +163,10 @@ def convert_dist_to_mtrs(dist_str):
     m_match = re.search(r'(\d+)\s*m\b', dist_str)
 
     if km_match:
-        return float(km_match.group(1)) * 1000
+        return int(float(km_match.group(1)) * 1000)
 
     if m_match:
-        return float(m_match.group(1))
+        return int(float(m_match.group(1)))
 
     return 0
 
@@ -178,70 +198,56 @@ def min_route_time_dist(route_time_dist_dict, param):
     return min_route_time_dist_dict
 
 
-def create_matrix(min_route_time_dist_dict):
-    # Step 1: Extract unique places
-    places = sorted(
-        set(p for key in min_route_time_dist_dict for p in key.split('/'))
-    )
+def create_matrix(min_route_time_dist_dict, places_dict):
+
+    # Keep original order
+    places = list(places_dict.keys())
 
     n = len(places)
 
-    # Step 2: Create empty matrix
-    matrix = [[0] * n for _ in range(n)]
+    matrix = [[0]*n for _ in range(n)]
 
-    # Step 3: Map place to index
     index = {place: i for i, place in enumerate(places)}
 
-    # Step 4: Fill matrix directly (no mirroring)
     for key, value in min_route_time_dist_dict.items():
         p1, p2 = key.split('/')
+
         i = index[p1]
         j = index[p2]
 
-        matrix[i][j] = value   # fill only this direction
+        matrix[i][j] = value
 
-    return matrix
+    return matrix, places
 
 
 def solve_tsp_with_path(matrix):
     n = len(matrix)
 
-    parent = {}
-
     @lru_cache(None)
     def dp(mask, pos):
+        # all cities visited → return to start
         if mask == (1 << n) - 1:
-            return matrix[pos][0]
+            return matrix[pos][0], [0]
 
-        min_cost = float('inf')
-        best_city = -1
+        min_cost = float("inf")
+        best_path = []
 
         for city in range(n):
             if not (mask & (1 << city)):
-                cost = matrix[pos][city] + dp(mask | (1 << city), city)
+
+                cost, sub_path = dp(mask | (1 << city), city)
+                cost += matrix[pos][city]
+
                 if cost < min_cost:
                     min_cost = cost
-                    best_city = city
+                    best_path = [city] + sub_path
 
-        parent[(mask, pos)] = best_city
-        return min_cost
+        return min_cost, best_path
 
-    min_cost = dp(1, 0)
+    min_cost, path = dp(1, 0)
 
-    # Reconstruct Path
-    mask = 1
-    pos = 0
-    path = [0]
-
-    while mask != (1 << n) - 1:
-        next_city = parent[(mask, pos)]
-        path.append(next_city)
-        mask |= (1 << next_city)
-        pos = next_city
-
-    path.append(0)  # return to start
-
-    path_with_prefix = [f"p{city}" for city in path]
+    full_path = [0] + path
+    path_with_prefix = [f"p{i}" for i in full_path]
 
     return min_cost, path_with_prefix
 
@@ -303,15 +309,24 @@ def open_maps_in_browser(url):
     driver.quit()
 
 
-def create_gmap_url(places_dict, optimal_path, max_places=10):
-    if len(optimal_path) > max_places:
-        optimal_path = optimal_path[0:9] + [optimal_path[-1]]
+def create_gmap_urls(places_dict, optimal_path, max_places=10):
+    urls = []
 
-    route_string = "/".join(places_dict[p] for p in optimal_path)
+    # step size keeps overlap so route continues correctly
+    step = max_places - 1
 
-    url = f"https://www.google.com/maps/dir/{route_string}"
+    for i in range(0, len(optimal_path)-1, step):
+        chunk = optimal_path[i:i + max_places]
 
-    return url
+        route_string = "/".join(places_dict[p] for p in chunk)
+        url = f"https://www.google.com/maps/dir/{route_string}"
+
+        urls.append(url)
+
+        if i + max_places >= len(optimal_path):
+            break
+
+    return urls
 
 
 def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_destinations.txt", parameters=['time', 'dist']):
@@ -331,7 +346,7 @@ def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_des
     # -----------------------------
     # 3. Scrape time & distance
     # -----------------------------
-    raw_route_time_dist_dict = scrape_time_dist_from_gmaps(route_url_dict)
+    raw_route_time_dist_dict = scrape_in_batches(route_url_dict, batch_size=30)
     # print(raw_route_time_dist_dict) #{'p0/p1': ['12 min', '9 min', '25 min', '25 min', '1.8 km', '31 min', '2.3 km'], 'p1/p0': ['13 min', '10 min', '25 min', '25 min', '1.8 km', '27 min', '2.0 km', '33 min', '2.4 km']}
 
     # -----------------------------
@@ -354,13 +369,14 @@ def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_des
         # -----------------------------
         # 6. Create distance matrix
         # -----------------------------
-        matrix = create_matrix(min_route_time_dist_dict)
+        matrix, places = create_matrix(min_route_time_dist_dict, places_dict)
         # print(matrix)
 
         # -----------------------------
         # 7. Solve TSP
         # -----------------------------
-        min_cost, optimal_path = solve_tsp_with_path(matrix)
+        min_cost, path = solve_tsp_with_path(matrix)
+        optimal_path = [places[int(p[1:])] for p in path]
         print(f"\n{param} - min cost:\n{min_cost} {dim}") #3600.0
 
         # -----------------------------
@@ -372,7 +388,7 @@ def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_des
         # -----------------------------
         # 9. Open final Google Maps route
         # -----------------------------
-        url = create_gmap_url(places_dict, optimal_path)
+        url = create_gmap_urls(places_dict, optimal_path)
         print(f"{param} - open gmaps url: ctrl + click:\n{url}\n") #https://www.google.com/maps/dir/Aparna+Cyberscape+A+Block/Aparna+CyberZon+Block+J/Aparna+Cyberscape+A+Block
 
     open_maps_in_browser(url)
