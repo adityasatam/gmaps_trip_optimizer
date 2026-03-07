@@ -12,30 +12,6 @@ import os
 import sys
 
 
-# def create_silent_driver():
-#     options = Options()
-
-#     # Disable Chrome logging
-#     options.add_argument("--log-level=3")
-#     options.add_argument("--disable-logging")
-#     options.add_argument("--disable-gpu")
-#     options.add_argument("--disable-extensions")
-#     options.add_argument("--no-sandbox")
-#     options.add_argument("--disable-dev-shm-usage")
-
-#     # Remove "DevTools listening"
-#     options.add_experimental_option("excludeSwitches", ["enable-logging"])
-
-#     # Silence chromedriver service logs
-#     service = Service(log_path=os.devnull)
-
-#     # Suppress stderr completely (strong suppression)
-#     sys.stderr = open(os.devnull, 'w')
-
-#     driver = webdriver.Chrome(service=service, options=options)
-#     return driver
-
-
 def load_places_from_file(file_path):
     places_dict = {}
 
@@ -186,27 +162,34 @@ def convert_dist_to_mtrs(dist_str):
     return 0
 
 
-def min_route_time_dist(route_time_dist_dict):
+def min_route_time_dist(route_time_dist_dict, param):
     min_route_time_dist_dict = {}
 
     for route, pairs in route_time_dist_dict.items():
-        grouped = defaultdict(list)
+
+        times = []
+        dists = []
 
         for time_str, dist_str in pairs:
             time_min = convert_time_to_mins(time_str)
             dist_m = convert_dist_to_mtrs(dist_str)
-            grouped[dist_m].append(time_min)
 
-        if grouped:
-            min_distance = min(grouped.keys())
-            min_route_time_dist_dict[route] = min_distance
+            times.append(time_min)
+            dists.append(dist_m)
+
+        if param == "dist":
+            min_route_time_dist_dict[route] = min(dists) if dists else None
+
+        elif param == "time":
+            min_route_time_dist_dict[route] = min(times) if times else None
+
         else:
-            min_route_time_dist_dict[route] = None  # or 0
+            raise ValueError("param must be 'dist' or 'time'")
 
     return min_route_time_dist_dict
 
 
-def create_dist_matrix(min_route_time_dist_dict):
+def create_matrix(min_route_time_dist_dict):
     # Step 1: Extract unique places
     places = sorted(
         set(p for key in min_route_time_dist_dict for p in key.split('/'))
@@ -215,7 +198,7 @@ def create_dist_matrix(min_route_time_dist_dict):
     n = len(places)
 
     # Step 2: Create empty matrix
-    dist_matrix = [[0] * n for _ in range(n)]
+    matrix = [[0] * n for _ in range(n)]
 
     # Step 3: Map place to index
     index = {place: i for i, place in enumerate(places)}
@@ -226,27 +209,27 @@ def create_dist_matrix(min_route_time_dist_dict):
         i = index[p1]
         j = index[p2]
 
-        dist_matrix[i][j] = value   # fill only this direction
+        matrix[i][j] = value   # fill only this direction
 
-    return dist_matrix
+    return matrix
 
 
-def solve_tsp_with_path(dist_matrix):
-    n = len(dist_matrix)
+def solve_tsp_with_path(matrix):
+    n = len(matrix)
 
     parent = {}
 
     @lru_cache(None)
     def dp(mask, pos):
         if mask == (1 << n) - 1:
-            return dist_matrix[pos][0]
+            return matrix[pos][0]
 
         min_cost = float('inf')
         best_city = -1
 
         for city in range(n):
             if not (mask & (1 << city)):
-                cost = dist_matrix[pos][city] + dp(mask | (1 << city), city)
+                cost = matrix[pos][city] + dp(mask | (1 << city), city)
                 if cost < min_cost:
                     min_cost = cost
                     best_city = city
@@ -274,7 +257,8 @@ def solve_tsp_with_path(dist_matrix):
     return min_cost, path_with_prefix
 
 
-def print_clean_route(places_dict, optimal_path):
+def print_clean_route(places_dict, optimal_path, min_route_time_dist_dict):
+    
     # Step 1: Convert keys to actual place strings
     raw_places = [places_dict[p] for p in optimal_path]
 
@@ -306,9 +290,20 @@ def print_clean_route(places_dict, optimal_path):
             cleaned = place
         cleaned_places.append(cleaned[0])
 
-    # Step 6: Print final route
-    final_route = " -> ".join(cleaned_places)
-    print(f"\nfinal_route:\n{final_route}\n")
+    # Step 6: Build route with distance
+    route_parts = []
+
+    for i in range(len(optimal_path) - 1):
+        start = optimal_path[i]
+        end = optimal_path[i + 1]
+
+        distance = int(min_route_time_dist_dict.get(f"{start}/{end}", 0))
+
+        route_parts.append(f"{cleaned_places[i]} -{distance}->")
+
+    route_parts.append(cleaned_places[-1])
+
+    return " ".join(route_parts)
 
 
 def open_maps_in_browser(url):
@@ -319,7 +314,7 @@ def open_maps_in_browser(url):
     driver.quit()
 
 
-def create_and_open_maps_url(places_dict, optimal_path, max_places=10):
+def create_gmap_url(places_dict, optimal_path, max_places=10):
     if len(optimal_path) > max_places:
         optimal_path = optimal_path[0:9] + [optimal_path[-1]]
 
@@ -327,11 +322,10 @@ def create_and_open_maps_url(places_dict, optimal_path, max_places=10):
 
     url = f"https://www.google.com/maps/dir/{route_string}"
 
-    print(f"open gmaps url: ctrl + click:\n{url}\n")
-    open_maps_in_browser(url)
+    return url
 
 
-def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_destinations.txt"):
+def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_destinations.txt", parameters=['dist', 'time']):
     places_fullfilepath = file_path+file_name
     # -----------------------------
     # 1. Load places
@@ -353,30 +347,36 @@ def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_des
     # -----------------------------
     route_time_dist_dict = valid_time_dist_pairs(raw_route_time_dist_dict)
     # print(route_time_dist_dict)
+    
+    for param in parameters:
+        # -----------------------------
+        # 5. Get minimum route distances
+        # -----------------------------
+        min_route_time_dist_dict = min_route_time_dist(route_time_dist_dict, param)
+        # print(min_route_time_dist_dict)
 
-    # -----------------------------
-    # 5. Get minimum route distances
-    # -----------------------------
-    min_route_time_dist_dict = min_route_time_dist(route_time_dist_dict)
-    # print(min_route_time_dist_dict)
+        # -----------------------------
+        # 6. Create distance matrix
+        # -----------------------------
+        matrix = create_matrix(min_route_time_dist_dict)
 
-    # -----------------------------
-    # 6. Create distance matrix
-    # -----------------------------
-    dist_matrix = create_dist_matrix(min_route_time_dist_dict)
-    # print(dist_matrix)
-    # -----------------------------
-    # 7. Solve TSP
-    # -----------------------------
-    min_cost, optimal_path = solve_tsp_with_path(dist_matrix)
-    print(f"\nmin_cost:\n{min_cost}")
+        # print(matrix)
+        # -----------------------------
+        # 7. Solve TSP
+        # -----------------------------
+        min_cost, optimal_path = solve_tsp_with_path(matrix)
+        print(f"\n{param} - min cost:\n{min_cost}")
 
-    # -----------------------------
-    # 8. Print clean route
-    # -----------------------------
-    print_clean_route(places_dict, optimal_path)
+        # -----------------------------
+        # 8. Print clean route
+        # -----------------------------
+        final_route = print_clean_route(places_dict, optimal_path, min_route_time_dist_dict)
+        print(f"\n{param} - final route:\n{final_route}\n")
 
-    # -----------------------------
-    # 9. Open final Google Maps route
-    # -----------------------------
-    create_and_open_maps_url(places_dict, optimal_path)
+        # -----------------------------
+        # 9. Open final Google Maps route
+        # -----------------------------
+        url = create_gmap_url(places_dict, optimal_path)
+        print(f"{param} - open gmaps url: ctrl + click:\n{url}\n")
+        
+    open_maps_in_browser(url)
