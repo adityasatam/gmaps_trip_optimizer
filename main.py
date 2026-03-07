@@ -4,12 +4,8 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from collections import defaultdict
 from functools import lru_cache
 import re
-import time
-import os
-import sys
 
 
 def load_places_from_file(file_path):
