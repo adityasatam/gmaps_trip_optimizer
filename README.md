@@ -23,3 +23,13 @@ Destination 3
 The first line is treated as the starting point & each destination must be on a new line.  
 The trip will always return to this source location.  
 Search destination name in gmap and copy it from destination box into local destination txt file.
+
+# 🐦 Main  
+main(file_path, file_name, parameters)    
+main(file_path="C:/Users/sasuk/travelling_salesman/", file_name="sample_destinations.txt", parameters=['time', 'dist'])  
+  
+file_path (str) – Path to the directory containing the input file. Ex: "C:/Users/sasuk/travelling_salesman/"  
+file_name (str) – Name of the file containing destination locations. Ex: "sample_destinations.txt"  
+parameters (list[str]) – Optimization criteria for route calculation.  
+"time" → Finds route with minimum travel time  
+"dist" → Finds route with minimum travel distance
