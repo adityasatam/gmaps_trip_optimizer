@@ -27,13 +27,11 @@ Copy the destination name from the Google Maps search box into the destination t
 Search multiple destinations route in Google Maps, and copy the gmap URL into the gmap_url parameter (run.py).  
   
 # 🐦 Main  
-main(gmap_url, full_file_path, parameters)  
-  
 main(gmap_url = "https://www.google.com/maps/dir/Place1/Place2/Place3/Place4"  
     , full_file_path = "C:/Users/sample_destinations.txt"  
     , parameters = ['time', 'dist'])  
   
-Parameters:  
+# Parameters:
 1. gmap_url (str) - Google Maps route URL containing all destinations.  
 2. full_file_path (str) – Full path to the destination input file. Ex: "C:/Users/sample_destinations.txt"  
 3. parameters (list[str]) – Optimization criteria for route calculation.  
