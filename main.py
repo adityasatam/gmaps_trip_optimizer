@@ -391,4 +391,4 @@ def main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_des
         url = create_gmap_urls(places_dict, optimal_path)
         print(f"{param} - open gmaps url: ctrl + click:\n{url}\n") #https://www.google.com/maps/dir/Aparna+Cyberscape+A+Block/Aparna+CyberZon+Block+J/Aparna+Cyberscape+A+Block
 
-    open_maps_in_browser(url)
+    open_maps_in_browser(url[0])
