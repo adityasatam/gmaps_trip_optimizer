@@ -12,6 +12,6 @@ response = requests.get(url)
 if response.status_code == 200:
     exec(response.text)
     #print(response.text)
-    main(file_path=r"C:/Users/sasuk/travelling_salesman/", file_name="sample_destinations.txt", parameters=['time', 'dist'])
+    main(gmap_url="https://www.google.com/maps/dir/Friends+Colony,+Jai+Hind+Nagar+Colony,+Qutub+Shahi+Tombs,+Hyderabad,+Telangana/Golconda+Fort,+Hyderabad,+Telangana/Qutub+Shahi+Tombs,+Hyderabad,+Telangana+500104/@17.3916524,78.3876687,15z/data=!3m1!4b1", parameters=['time', 'dist'])
 else:
     print("Failed to execute the github code")
