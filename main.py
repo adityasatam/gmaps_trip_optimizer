@@ -298,10 +298,7 @@ def print_clean_route(places_dict, optimal_path, min_route_time_dist_dict, dim):
         start = optimal_path[i]
         end = optimal_path[i + 1]
 
-        if dim == 'mi':
-            value = int(min_route_time_dist_dict.get(f"{start}/{end}", 0))
-        else:
-            value = float(min_route_time_dist_dict.get(f"{start}/{end}", 0))
+        value = min_route_time_dist_dict.get(f"{start}/{end}", 0)
         route_parts.append(f"{cleaned_places[i]} -{value} {dim}->")
 
     route_parts.append(cleaned_places[-1])
