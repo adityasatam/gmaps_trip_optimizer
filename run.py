@@ -1,7 +1,6 @@
 import requests
 import numpy as np
 
-# 1) keep your destinations file in .txt format in local folder.
 # 1) copy this run.py in your local VS Code.
 # 2) only modify gmap_url parameter (line 15) with gmap url links (multiple links incase of more than 10 locations).
 # 3) execute run.py in your local VS Code.
