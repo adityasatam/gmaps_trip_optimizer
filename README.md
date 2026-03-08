@@ -12,10 +12,11 @@ Outputs the optimized round trip and creates a Google Maps navigation link.
 # 📥 Input  
 # Google Maps Route URL  
 Search multiple destinations route in Google Maps, and copy the gmap URL into the gmap_url parameter (run.py).  
+Use multiple URLs if the route exceeds 10 destinations.  
   
 # 🐦 Main  
-main(gmap_url = ["https://www.google.com/maps/dir/Place1/Place2/Place3/Place4/Place5/Place6/Place7/Place8/Place9/Place10"
-    , "https://www.google.com/maps/dir/Place11/Place12/Place13/Place14"]
+main(gmap_url = ["https://www.google.com/maps/dir/Place1/Place2/Place3/Place4/Place5/Place6/Place7/Place8/Place9/Place10"  
+    , "https://www.google.com/maps/dir/Place11/Place12/Place13/Place14"]  
     , optimize_by = ['time', 'dist'])  
   
 # Parameters:
