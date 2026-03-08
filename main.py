@@ -162,17 +162,17 @@ def convert_time_to_mins(time_str):
     return hours * 60 + minutes
 
 
-def convert_dist_to_mtrs(dist_str):
+def convert_dist_to_km(dist_str):
     dist_str = dist_str.lower().strip()
 
     km_match = re.search(r'(\d+(?:\.\d+)?)\s*km\b', dist_str)
-    m_match = re.search(r'(\d+)\s*m\b', dist_str)
+    m_match = re.search(r'(\d+(?:\.\d+)?)\s*m\b', dist_str)
 
     if km_match:
-        return int(float(km_match.group(1)) * 1000)
+        return float(km_match.group(1))
 
     if m_match:
-        return int(float(m_match.group(1)))
+        return float(m_match.group(1)) / 1000
 
     return 0
 
@@ -187,7 +187,7 @@ def min_route_time_dist(route_time_dist_dict, param):
 
         for time_str, dist_str in pairs:
             time_min = convert_time_to_mins(time_str)
-            dist_m = convert_dist_to_mtrs(dist_str)
+            dist_m = convert_dist_to_km(dist_str)
 
             times.append(time_min)
             dists.append(dist_m)
@@ -298,9 +298,11 @@ def print_clean_route(places_dict, optimal_path, min_route_time_dist_dict, dim):
         start = optimal_path[i]
         end = optimal_path[i + 1]
 
-        distance = int(min_route_time_dist_dict.get(f"{start}/{end}", 0))
-
-        route_parts.append(f"{cleaned_places[i]} -{distance} {dim}->")
+        if dim == 'mi':
+            value = int(min_route_time_dist_dict.get(f"{start}/{end}", 0))
+        else:
+            value = float(min_route_time_dist_dict.get(f"{start}/{end}", 0))
+        route_parts.append(f"{cleaned_places[i]} -{value} {dim}->")
 
     route_parts.append(cleaned_places[-1])
 
@@ -365,9 +367,9 @@ def main(gmap_url=["https://www.google.com/maps/dir/Ramky+One+Kosmos,+Eco+Art+St
 
     for param in optimize_by:
         if param == 'dist':
-            dim = 'mtr'
+            dim = 'km'
         else:
-            dim = 'min'
+            dim = 'mi'
         # -----------------------------
         # 5. Get minimum route distances
         # -----------------------------
